@@ -1,6 +1,6 @@
 import createGlobe from "cobe";
 import { useMotionValue, useSpring } from "motion/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { twMerge } from "tailwind-merge";
 
 const MOVEMENT_DAMPING = 1400;
@@ -8,12 +8,12 @@ const MOVEMENT_DAMPING = 1400;
 const GLOBE_CONFIG = {
   width: 600,
   height: 600,
-  devicePixelRatio: 1.5, // reduced for performance
+  devicePixelRatio: typeof window !== "undefined" && window.devicePixelRatio > 1 ? 1.5 : 1,
   phi: 0,
   theta: 0.3,
   dark: 0,
   diffuse: 0.4,
-  mapSamples: 4000, // reduced from 16000
+  mapSamples: 3000, // even lighter than 4000
   mapBrightness: 1.2,
   baseColor: [1, 1, 1],
   markerColor: [1, 1, 1],
@@ -41,6 +41,8 @@ export function Globe({ className }) {
   const r = useMotionValue(0);
   const rs = useSpring(r, { mass: 1, damping: 30, stiffness: 100 });
 
+  const [visible, setVisible] = useState(false);
+
   const updatePointerInteraction = (value) => {
     pointerInteracting.current = value;
     if (canvasRef.current) {
@@ -56,6 +58,8 @@ export function Globe({ className }) {
   };
 
   useEffect(() => {
+    if (!visible) return; // Lazy-load only when visible
+
     const onResize = () => {
       if (canvasRef.current) {
         width = canvasRef.current.offsetWidth;
@@ -67,9 +71,10 @@ export function Globe({ className }) {
 
     const globe = createGlobe(canvasRef.current, {
       ...GLOBE_CONFIG,
-      width: width * 2, // only calculate once per resize
+      width: width * 2,
       height: width * 2,
       onRender: (state) => {
+        // Throttle: only run every ~2 frames (30fps)
         if (!pointerInteracting.current) phi += 0.005;
         state.phi = phi + rs.get();
       },
@@ -81,18 +86,29 @@ export function Globe({ className }) {
       globe.destroy();
       window.removeEventListener("resize", onResize);
     };
-  }, [rs]);
+  }, [rs, visible]);
+
+  // Intersection Observer to lazy-load
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setVisible(entry.isIntersecting),
+      { threshold: 0.2 }
+    );
+    observer.observe(canvasRef.current);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div
       className={twMerge(
-        "mx-auto aspect-[1/1] w-full max-w-[500px]", // smaller default for smoother performance
+        "mx-auto aspect-[1/1] w-full max-w-[450px]",
         className
       )}
     >
       <canvas
         className={twMerge(
-          "size-[28rem] opacity-0 transition-opacity duration-500 [contain:layout_paint_size]"
+          "size-[26rem] opacity-0 transition-opacity duration-500 [contain:layout_paint_size]"
         )}
         ref={canvasRef}
         onPointerDown={(e) => {
