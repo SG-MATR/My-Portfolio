@@ -25,7 +25,7 @@ Backend: Node.js / Express.js
 
 Database: MongoDB / PostgreSQL / MySql
 
-Deployment: https://my-portfolio-2b1338u1a-abdulrahmans-projects-582c6a92.vercel.app/
+Deployment: https://my-portfolio-virid-one-19.vercel.app/
 
 🚀 Getting Started
 Clone the repository
