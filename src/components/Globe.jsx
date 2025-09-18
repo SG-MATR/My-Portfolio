@@ -6,18 +6,17 @@ import { twMerge } from "tailwind-merge";
 const MOVEMENT_DAMPING = 1400;
 
 const GLOBE_CONFIG = {
-  width: 800,
-  height: 800,
-  onRender: () => {},
-  devicePixelRatio: 2,
+  width: 600,
+  height: 600,
+  devicePixelRatio: 1.5, // reduced for performance
   phi: 0,
   theta: 0.3,
   dark: 0,
   diffuse: 0.4,
-  mapSamples: 16000,
+  mapSamples: 4000, // reduced from 16000
   mapBrightness: 1.2,
   baseColor: [1, 1, 1],
-  markerColor: [1,1,1],
+  markerColor: [1, 1, 1],
   glowColor: [1, 1, 1],
   markers: [
     { location: [14.5995, 120.9842], size: 0.03 },
@@ -38,7 +37,6 @@ export function Globe({ className }) {
   let width = 0;
   const canvasRef = useRef(null);
   const pointerInteracting = useRef(null);
-  const pointerInteractionMovement = useRef(0);
 
   const r = useMotionValue(0);
   const rs = useSpring(r, { mass: 1, damping: 30, stiffness: 100 });
@@ -53,7 +51,6 @@ export function Globe({ className }) {
   const updateMovement = (clientX) => {
     if (pointerInteracting.current !== null) {
       const delta = clientX - pointerInteracting.current;
-      pointerInteractionMovement.current = delta;
       r.set(r.get() + delta / MOVEMENT_DAMPING);
     }
   };
@@ -70,17 +67,16 @@ export function Globe({ className }) {
 
     const globe = createGlobe(canvasRef.current, {
       ...GLOBE_CONFIG,
-      width: width * 2,
+      width: width * 2, // only calculate once per resize
       height: width * 2,
       onRender: (state) => {
         if (!pointerInteracting.current) phi += 0.005;
         state.phi = phi + rs.get();
-        state.width = width * 2;
-        state.height = width * 2;
       },
     });
 
     setTimeout(() => (canvasRef.current.style.opacity = "1"), 0);
+
     return () => {
       globe.destroy();
       window.removeEventListener("resize", onResize);
@@ -90,13 +86,13 @@ export function Globe({ className }) {
   return (
     <div
       className={twMerge(
-        "mx-auto aspect-[1/1] w-full max-w-[600px]",
+        "mx-auto aspect-[1/1] w-full max-w-[500px]", // smaller default for smoother performance
         className
       )}
     >
       <canvas
         className={twMerge(
-          "size-[30rem] opacity-0 transition-opacity duration-500 [contain:layout_paint_size]"
+          "size-[28rem] opacity-0 transition-opacity duration-500 [contain:layout_paint_size]"
         )}
         ref={canvasRef}
         onPointerDown={(e) => {
